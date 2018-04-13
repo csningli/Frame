@@ -1,0 +1,10 @@
+
+# test_game.dao
+# copyright (c) 2016-2017, NiL, csningli@gmail.com
+
+# load "../dao/GF_Game.dao"
+load "../dao/Frame.dao"
+
+var root = Frame_Node("0")
+
+return 0

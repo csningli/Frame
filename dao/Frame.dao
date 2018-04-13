@@ -1,0 +1,322 @@
+
+# Frame.dao
+# copyright (c) 2018, NiL, csningli@gmail.com .
+
+class Frame_ParaPack
+{
+	private
+
+	var _paras : map<string, int | float | bool | string | none> = {=>}
+
+	public
+
+	routine Frame_ParaPack(paras : map<string, int | float | bool | string | none> = {=>}) {
+		paras.iterate(){[name, para]
+			_paras[name] = para
+		}
+	}
+
+	routine Info() {
+		io.writeln("Paras")
+		io.writeln("--------------------------")
+		_paras.iterate(){[name, value]
+			io.writeln(name, value)
+		}
+		io.writeln("--------------------------")
+	}
+
+	routine Add(name : string, value : int | float | bool | string | none) => bool {
+		var result : bool = false
+		if (name not in _paras.keys()) {
+			_paras[name] = value
+			result = true
+		}
+		return result
+	}
+
+	routine Get(name : string) => int | float | bool | string | none {
+		var value : int | float | bool | string | none = none
+		if (name in _paras.keys()) {
+			value = _paras[name]
+		}
+		return value
+	}
+
+	routine Set(name : string, value : int | float | bool | string | none) => bool {
+		var result : bool = false
+		if (name in _paras.keys()) {
+			_paras[name] = value
+			result = true
+		}
+		return result
+	}
+
+	# routine Fit(keyValues : map<string, int | float | bool | string | none>) {
+	routine Fit(keyValues : map<string, any>) => bool {
+		var result : bool = true
+		keyValues.iterate(){[name, value]
+			if (name not in _paras.keys() or _paras[name] != value) {
+				result = false
+			}
+		}
+		return result
+	}
+}
+
+class Frame_StatePack
+{
+	private
+
+	var _ranges : map<string, list<string>> = {=>}
+	var _states : map<string, string> = {=>}
+
+	public
+
+	routine Frame_StatePack(stateRanges : map<string, list<string>> = {=>}) {
+		stateRanges.iterate(){[name, range]
+			_ranges[name] = {}
+			range.iterate(){[value, _]
+				_ranges[name].append(value)
+			}
+		}
+		_ranges.iterate(){[name, range]
+			_states[name] = ""
+			if (range.size() > 0) {
+				_states[name] = range[0]
+			}
+		}
+	}
+
+	routine Info() {
+		io.writeln("Ranges")
+		io.writeln("--------------------------")
+		_ranges.iterate(){[name, range]
+			io.writeln(name, range)
+		}
+		io.writeln("==========================")
+		io.writeln("States")
+		io.writeln("--------------------------")
+		_states.iterate(){[name, value]
+			io.writeln(name, value)
+		}
+		io.writeln("--------------------------")
+	}
+
+	routine Add(name : string, range : list<string>) => bool {
+		var result : bool = false
+		if (name not in _ranges.keys()) {
+			_ranges[name] = {}
+			range.iterate(){[value, _]
+				_ranges[name].append(value)
+			}
+			_states[name] = ""
+			if (_ranges[name].size() > 0) {
+				_states[name] = _ranges[name][0]
+			}
+			result = true
+		}
+		# io.writeln("* * [SP_StatePack.Add()] name-range:", name, range, _ranges)
+		return result
+	}
+
+	routine Get(name : string) => string {
+		var value : string = ""
+		if (name in _states.keys()) {
+			value = _states[name]
+		}
+		return value
+	}
+
+	routine Set(name : string, value : string) => bool {
+		var result : bool = false
+		if (name in _ranges.keys() and value in _ranges[name]) {
+			_states[name] = value
+			result = true
+		}
+		return result
+	}
+
+	routine Fit(stateRanges : map<string, list<string>>) => bool {
+		var result : bool = true
+		stateRanges.iterate(){[name, range]
+			if (name not in _states.keys() or _states[name] == "" or _states[name] not in range) {
+				result = false
+			}
+		}
+		return result
+	}
+}
+
+class Frame_Warehouse
+{
+	private
+
+	var _tables : map<string, map<string, any>> = {=>}
+
+	public
+
+	routine Frame_Warehouse() {
+	}
+
+	routine AddTable(tableName : string, table : map<string, any> = {=>}) => bool {
+		var result : bool = false
+		if (tableName not in _tables.keys()) {
+			_tables[tableName] = {=>}
+			table.iterate(){[key, value]
+				_tables[tableName][key] = value
+			}
+			result = true
+		}
+		return result
+	}
+
+	routine GetTable(tableName : string) => map<string, any> {
+		var table : map<string, any> = {=>}
+		if (tableName in _tables.keys()) {
+			table = _tables[tableName]
+		}
+		return table
+	}
+
+	routine RemoveTable(tableName : string) => bool {
+		var result : bool = false
+		if (tableName in _tables.keys()) {
+			_tables.erase(tableName)
+			result = true
+		}
+		return result
+	}
+
+	routine SetKeyValue(tableName : string, key : string , value : any) => bool {
+		var result : bool = false
+		if (tableName in _tables.keys()) {
+			_tables[tableName][key] = value
+			result = true
+		}
+		return result
+	}
+
+	routine GetKeyValue(tableName : string, key : string) => any {
+		var value : any = none
+		if (tableName in _tables.keys()) {
+			value = _tables[tableName][key]
+		}
+		return value
+	}
+}
+
+interface Frame_Node_I
+{
+	routine GetId() => string
+	routine SetId(id : string)
+	routine GetParaPack() => Frame_ParaPack | none
+	routine SetParaPack(paraPack : Frame_ParaPack | none = none)
+	routine GetStatePack() => Frame_StatePack | none
+	routine SetStatePack(statePack : Frame_StatePack | none = none)
+	routine GetWarehouse() => Frame_Warehouse | none
+	routine SetWarehouse(warehouse : Frame_Warehouse | none = none)
+}
+
+class Frame_Node
+{
+	private
+
+	var _id : string = ""
+	var _root : Frame_Node_I | none = none
+	var _children : map<string, Frame_Node_I> = {=>}
+	var _paraPack : Frame_ParaPack
+	var _statePack : Frame_StatePack
+	var _warehouse : Frame_Warehouse
+
+	public
+
+	routine Frame_Node(id : string, paraPack : Frame_ParaPack | none = none, statePack : Frame_StatePack | none = none, warehouse : Frame_Warehouse | none = none) {
+		SetId(id)
+
+		if (paraPack != none) _paraPack = paraPack
+		else _paraPack = Frame_ParaPack()
+
+		if (statePack != none) _statePack = statePack
+		else _statePack = Frame_StatePack()
+
+		if (warehouse != none) _warehouse = warehouse
+		else _warehouse = Frame_Warehouse()
+	}
+
+	routine GetId() => string {
+		return _id
+	}
+
+	routine SetId(id : string) {
+		_id = id
+	}
+
+	routine GetRoot() => Frame_Node_I | none {
+		return _root
+	}
+
+	routine SetRoot(root : Frame_Node_I | none) {
+		_root = root
+		for (var child in _children.values()) {
+			if (child ?< Frame_Node) ((Frame_Node) child).SetRoot(_root)
+		}
+	}
+
+	routine AddChild(name : string, child : Frame_Node_I) {
+		var result : bool = false
+		if (name not in _children.keys()) {
+			if (child ?< Frame_Node) ((Frame_Node) child).SetRoot(GetRoot())
+			child.SetParaPack(GetParaPack())
+			child.SetStatePack(GetStatePack())
+			child.SetWarehouse(GetWarehouse())
+			_children[name] = child
+			result = true
+		}
+		return result
+	}
+
+	routine GetChild(name : string) {
+		var child : Frame_Node_I | none = none
+		if (name in _children.keys()) child = _children[name]
+		return child
+	}
+
+	routine RemoveChild(name : string) {
+		var result : bool = false
+		if (name in _children.keys()) {
+			_children.erase(name)
+			result = true
+		}
+		return result
+	}
+
+	routine GetParaPack() => Frame_ParaPack | none {
+		return _paraPack
+	}
+
+	routine SetParaPack(paraPack : Frame_ParaPack | none = none) {
+		if (paraPack != none) _paraPack = paraPack
+		else _paraPack = Frame_ParaPack()
+		for (var child in _children.values()) child.SetParaPack(_paraPack)
+	}
+
+	routine GetStatePack() => Frame_StatePack | none {
+		return _statePack
+	}
+
+	routine SetStatePack(statePack : Frame_StatePack | none = none) {
+		if (statePack != none) _statePack = statePack
+		else _statePack = Frame_StatePack()
+		for (var child in _children.values()) child.SetStatePack(_statePack)
+	}
+
+	routine GetWarehouse() => Frame_Warehouse | none {
+		return _warehouse
+	}
+
+	routine SetWarehouse(warehouse : Frame_Warehouse | none = none) {
+		if (warehouse != none) _warehouse = warehouse
+		else _warehouse = Frame_Warehouse()
+		for (var child in _children.values()) child.SetWarehouse(_warehouse)
+	}
+}
